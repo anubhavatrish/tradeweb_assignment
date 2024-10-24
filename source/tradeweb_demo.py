@@ -1,11 +1,9 @@
 import re
+import time
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-import time
 
 
 def get_driver():
@@ -20,37 +18,69 @@ def launch_webpage(driver):
 def close_driver(driver):
     driver.quit()
 
-def validate_numeric_column_values(identifier):
+def validate_numeric_column_values(value_to_validate):
+    assert bool(re.match(r'^[\d,.]+$', value_to_validate))
+
+def get_table_data_as_column(column_name):
+    ticker = []
+    instrument = []
+    pnl = []
+    total_value = []
+    quantity = []
+    price = []
+    last_24_hrs = []
+
     driver = get_driver()
     try:
-        time.sleep(3)
         launch_webpage(driver)
-        instrument_col_cells = driver.find_elements(By.CSS_SELECTOR, identifier)
-        instrument_cell_values = [cell.text for cell in instrument_col_cells]
-        for instrument_cell_value in instrument_cell_values:
-            assert bool(re.match(r'^-?\d+(\.\d+)?$', instrument_cell_value))
+        time.sleep(3)
+
+        grid = driver.find_element(By.CSS_SELECTOR, ".ag-root-wrapper-body")
+
+        rows = grid.find_elements(By.CSS_SELECTOR, ".ag-row")
+
+        for row in rows:
+            cells = row.find_elements(By.CSS_SELECTOR, ".ag-cell")
+            row_data = [cell.text for cell in cells]
+            ticker.append(row_data[0])
+            instrument.append(row_data[1])
+            pnl.append(row_data[2])
+            total_value.append(row_data[3])
+            quantity.append(row_data[4])
+            price.append(row_data[5])
+            last_24_hrs.append(row_data[6])
+
     finally:
         close_driver(driver)
 
+    return locals().get(column_name)
 
-def test_validate_numeric_column():
-    pass
+
+
+
+
 
 def test_validate_sorting_functionality():
     pass
 
+
 def test_validate_instrument_column():
-    driver = get_driver()
-    try:
-        time.sleep(3)
-        launch_webpage(driver)
-        instrument_col_cells = driver.find_elements(By.CSS_SELECTOR, '')
-        instrument_cell_values = [cell.text for cell in instrument_col_cells]
-        allowed_values = ['Bond', 'ETF', 'Crypto', 'Stock']
-        for instrument_cell_value in instrument_cell_values:
-            if instrument_cell_value in allowed_values:
-                assert True
-            else:
-                assert False
-    finally:
-        close_driver(driver)
+    instrument_col_values = get_table_data_as_column('instrument')
+    allowed_values = ['Bond', 'ETF', 'Crypto', 'Stock']
+    for instrument_col_value in instrument_col_values:
+        assert (instrument_col_value in allowed_values)
+
+
+def test_validate_pnl_values():
+    pnl_column_values = get_table_data_as_column('pnl')
+    print(pnl_column_values)
+    for pnl_column_value in pnl_column_values:
+        validate_numeric_column_values(pnl_column_value.lstrip('↑').lstrip('↓'))
+
+
+def test_validate_total_value_values():
+    total_value_column_values = get_table_data_as_column('total_value')
+    print(total_value_column_values)
+    for total_value_column_value in total_value_column_values:
+        validate_numeric_column_values(total_value_column_value.lstrip('↑').lstrip('↓'))
+
