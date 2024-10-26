@@ -65,7 +65,7 @@ def get_table_data_as_rows(driver):
                 consecutive_scroll_count = 0 # Reset consecutive scroll count
 
             except NoSuchElementException: # If the current value of row index is not found, scroll the grid
-                driver.execute_script("document.querySelector('.ag-body-viewport').scrollTop += 500;")
+                driver.execute_script("document.querySelector('.ag-body-viewport').scrollTop += 1000;")
                 time.sleep(2)
                 consecutive_scroll_count +=1
     finally:
